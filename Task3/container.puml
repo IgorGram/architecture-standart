@@ -1,0 +1,53 @@
+
+@startuml
+
+!include <C4/C4_Container>
+
+'System_Boundary(users, "") {
+
+Person(client, "Клиент", "Физическое лицо, подающее заявку на депозит")
+Person(backoffice, "Сотрудник бэк-офиса", "Обрабатывает заявки в АБС")
+Person(operator, "Оператор кол-центра", "Обслуживает клиентов через CRM")
+'}
+
+System_Boundary(abc, "ABC - Банковская система") {
+    Container(abc_monolith, "ABC", "Delphi")
+    ContainerDb(abcDb, "ABC база данных", "Oracle")
+
+    Rel(abc_monolith, abcDb, "Исполнение запросов", "SQL")
+}
+
+System_Boundary(crm, "CRM кол-центра") {
+    Container(crm_service, "Сервис CRM кол-центра", "Java")
+}
+
+System_Boundary(online_bank, "Интернет-банк") {
+    Container(online_bank_service, "Сервис интернет-банк", ".NET", "Монолит")
+    ContainerDb(online_bank_db, "База данных\n интернет-банка", "MSSQL")
+
+    Container(deposit_service, "Микросервис депозитов", ".NET")
+    ContainerDb(deposit_cache, "Кеш микросервиса депозитов", "MSSQL")
+
+    ContainerQueue(kafka, "Брокер сообщений", "Kafka")
+
+    Rel(online_bank_service, online_bank_db, "")
+    Rel(deposit_service, deposit_cache, "")
+
+    Rel(online_bank_service, deposit_service, "Делает запросы", "HTTP/JSON")
+}
+
+System_Ext(sms_gateway, "SMS-шлюз")
+
+Rel(client, online_bank_service, "Использует")
+Rel(backoffice, abc_monolith, "Использует")
+Rel(operator, crm_service, "Использует")
+
+Rel(abc_monolith, sms_gateway, "Отправка СМС")
+Rel(deposit_service, kafka, "Отправка заявок на депозит", "Kafka protocol")
+Rel(online_bank_service, kafka, "Отправка информации о платежах", "Kafka protocol")
+Rel(kafka, abc_monolith, "Отправка заявок", "Kafka protocol")
+Rel(crm_service, sms_gateway, "Отправка СМС")
+Rel(crm_service, deposit_service, "Отправка заявок", "HTTP/JSON")
+
+
+@enduml

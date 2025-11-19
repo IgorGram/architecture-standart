@@ -1,0 +1,39 @@
+@startuml
+!include <C4/C4_Component>
+
+Component(abs, "АБС", ".NET")
+Component(deposit_service, "Микросервис депозитов", ".NET")
+System_Ext(partner_crm, "CRM партнёра")
+
+Container_Boundary(deposit_svc, "Микросервис депозитов") {
+    Component(consumer, "Kafka Consumer", "C#")
+    Component(kafka_producer, "Kafka Producer", "C#")
+    Component(core, "Ядро", ".NET")
+
+    Rel(core, kafka_producer, "Событие изменения")
+    Rel(consumer, core, "Данные ставок")
+}
+
+Container_Boundary(export_svc, "Микросервис выгрузки") {
+    Component(kafka_consumer, "Kafka Consumer", "C#")
+    Component(rate_fetcher, "Ядро", "C#")
+    Component(file_generator, "CSV генератор", "C#")
+    Component(sftp_uploader, "SFTP клиент", "C#")
+
+    Rel(kafka_consumer, rate_fetcher, "Триггер запроса")
+    Rel(rate_fetcher, deposit_service, "GET /api/rates")
+    Rel(rate_fetcher, file_generator, "Данные ставок")
+    Rel(rate_fetcher, sftp_uploader, "CSV файл")
+}
+
+
+Container(kafka, "Kafka", "Топик: rates.changed")
+Container(sftp, "SFTP-сервер")
+
+Rel(abs, kafka, "Данные ставок")
+Rel(kafka, consumer, "Данные ставок")
+Rel(kafka_producer, kafka, "Отправка событий")
+Rel(kafka, kafka_consumer, "Чтение событий")
+Rel(sftp_uploader, sftp, "Загрузка файла")
+Rel(partner_crm, sftp, "Получение ставок")
+@enduml

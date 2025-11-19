@@ -1,0 +1,29 @@
+@startuml
+!include <C4/C4_Container>
+
+Person(operator, "Оператор кол-центра")
+Person(partner_operator, "Оператор партнёра")
+Person(client, "Клиент")
+
+Rel(client, partner_operator, "Получает консультацию")
+Rel(client, operator, "Получает консультацию")
+
+System_Boundary(bank, "Банк") {
+    Container(deposit_service, "Микросервис депозитов", ".NET", "Управление ставками")
+    Container(export_service, "Микросервис выгрузки \n ставок депозитов", ".NET", "Обработка событий")
+    Container(crm, "CRM кол-центра", "Java")
+    Container(sftp, "SFTP-сервер")
+    ContainerQueue(kafka, "Брокер сообщений", "Kafka")
+}
+
+System_Ext(partner_crm, "CRM партнёра")
+
+Rel(operator, crm, "Просмотр ставок")
+Rel(partner_operator, partner_crm, "Просмотр ставок")
+Rel(deposit_service, kafka, "Отправка события", "rates.changed")
+Rel(kafka, export_service, "Получение события")
+Rel(export_service, deposit_service, "Запрос ставок", "HTTP")
+Rel(export_service, sftp, "Выгрузка файла", "SFTP")
+Rel(sftp, partner_crm, "Автозагрузка", "SFTP")
+Rel(deposit_service, crm, "Уведомление об изменении", "WebSocket")
+@enduml

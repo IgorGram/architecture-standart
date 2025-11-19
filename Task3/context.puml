@@ -1,0 +1,25 @@
+@startuml
+!include <C4/C4_Container>
+
+
+Person(client, "Клиент", "Физическое лицо, подающее заявку на депозит")
+Person(backoffice, "Сотрудник бэк-офиса", "Обрабатывает заявки в АБС")
+Person(operator, "Оператор кол-центра", "Обслуживает клиентов через CRM")
+
+System_Boundary(systems, "Банковские системы") {
+    Container(website, "Сайт", "PHP+React", "Веб-интерфейс для подачи заявок")
+    Container(online_bank, "Интернет-банк", ".NET+SQL", "Система онлайн-банкинга")
+    Container(abs, "АБС", "Oracle", "Автоматизированная банковская система")
+    Container(crm, "CRM кол-центра", "Java+PostgreSQL", "Система управления клиентскими обращениями")
+    Container(sms_gateway, "СМС-шлюз", "", "Отправка SMS-уведомлений")
+}
+
+Rel(client, website, "Подача заявки")
+Rel(client, online_bank, "Открытие депозита")
+Rel(website, crm, "Зашифрованные данные", "HTTPS")
+Rel(online_bank, abs, "Заявка + SMS-подтверждение", "HTTPS")
+Rel(abs, backoffice, "Интерфейс обработки")
+Rel(crm, operator, "Интерфейс звонков")
+Rel(abs, sms_gateway, "Уведомления")
+Rel(crm, sms_gateway, "Уведомления")
+@enduml
